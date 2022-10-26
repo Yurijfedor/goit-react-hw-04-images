@@ -1,4 +1,4 @@
-import { Component } from 'react';
+import { useState, useEffect } from 'react';
 import { Notify } from 'notiflix/build/notiflix-notify-aio';
 import { Searchbar } from './imageGallery/searchbar';
 import { ImageGallery } from './imageGallery/imageGallery';
@@ -8,97 +8,84 @@ import { Modal } from './imageGallery/modal';
 import { fetchPictures } from './services/pixabayApiService';
 import { Box } from 'constans';
 
-const INITIAL_STATE = {
-  query: '',
-  items: [],
-  isLoader: false,
-  page: 1,
-  largeImageUrl: '',
-  showModal: false,
-  totalImages: 1,
-};
-export class App extends Component {
-  state = {
-    ...INITIAL_STATE,
-  };
+export const App = () => {
+  const [showModal, setShowModal] = useState(false);
+  const [query, setQuery] = useState('');
+  const [page, setPage] = useState(1);
+  const [largeImageUrl, setLargeImageUrl] = useState('');
+  const [items, setItems] = useState([]);
+  const [isLoader, setIsloader] = useState(false);
+  const [totalImages, setTotalImages] = useState(1);
+  const [alt, setAlt] = useState('');
 
-  componentDidUpdate(_, prevState) {
-    const { query, page } = this.state;
-    const prevQuery = prevState.query;
-    const nextQuery = query;
-
-    if (prevQuery !== nextQuery || prevState.page !== page) {
-      fetchPictures(query, page)
-        .then(response => {
-          if (response.data.hits.length === 0) {
-            this.toglleLoader();
-            return Notify.failure(
-              `Sorry, we couldn't find anything else! Try another query!`
-            );
-          }
-          this.toglleLoader();
-          const collectionOfImages = response.data.hits;
-          this.setState(prevState => ({
-            items: [...prevState.items, ...collectionOfImages],
-            totalImages: response.data.total,
-          }));
-        })
-        .finally(this.toglleLoader());
+  useEffect(() => {
+    if (!query) {
+      return;
     }
-  }
+    fetchPictures(query, page)
+      .then(response => {
+        if (response.data.hits.length === 0) {
+          toglleLoader();
+          return Notify.failure(
+            `Sorry, we couldn't find anything else! Try another query!`
+          );
+        }
+        toglleLoader();
+        const collectionOfImages = response.data.hits;
+        setItems(prevState => [...prevState, ...collectionOfImages]);
+        setTotalImages(response.data.total);
+      })
+      .finally(toglleLoader());
+  }, [query, page]);
 
-  handleSubmit = value => {
-    this.clearGallery();
-    const query = value.toLowerCase();
+  const handleSubmit = value => {
+    clearGallery();
     value.trim() !== ''
-      ? this.setState({ query: query })
+      ? setQuery(value.toLowerCase())
       : Notify.failure('Please, enter your query!');
   };
 
-  toglleLoader() {
-    this.setState(prevState =>
-      prevState.isLoader ? { isLoader: false } : { isLoader: true }
-    );
-  }
-
-  clearGallery() {
-    this.setState({ ...INITIAL_STATE });
-  }
-
-  loadMore = () => {
-    this.state.query &&
-      this.setState(prevState => ({
-        page: prevState.page + 1,
-      }));
+  const toglleLoader = () => {
+    setIsloader(prevState => (prevState ? false : true));
   };
 
-  changeLargeImage = url => {
-    this.setState({ largeImageUrl: url });
-    this.toggleModal();
+  const clearGallery = () => {
+    setShowModal(false);
+    setQuery('');
+    setPage(1);
+    setLargeImageUrl('');
+    setItems([]);
+    setIsloader(false);
+    setTotalImages(1);
+    setAlt('');
   };
 
-  toggleModal = () => {
-    this.setState(({ showModal }) => ({
-      showModal: !showModal,
-    }));
+  const loadMore = () => {
+    query && setPage(prevState => prevState + 1);
   };
 
-  render() {
-    const { showModal, largeImageUrl, items, isLoader, totalImages } =
-      this.state;
-    return (
-      <Box display={'grid'} gridTemplateColumns={'1fr'} gridGap={4} pb={4}>
-        {showModal && (
-          <Modal onClose={this.toggleModal} largeImageUrl={largeImageUrl} />
-        )}
-        <Searchbar onSubmit={this.handleSubmit} />
+  const changeLargeImage = (url, alt) => {
+    setLargeImageUrl(url);
+    setAlt(alt);
+    toggleModal();
+  };
 
-        <ImageGallery images={items} onClick={this.changeLargeImage} />
-        {isLoader && <Loader />}
-        {items.length !== totalImages && items.length !== 0 && (
-          <Button onClick={this.loadMore} />
-        )}
-      </Box>
-    );
-  }
-}
+  const toggleModal = () => {
+    setShowModal(prevState => !prevState);
+  };
+
+  return (
+    <Box display={'grid'} gridTemplateColumns={'1fr'} gridGap={4} pb={4}>
+      {showModal && (
+        <Modal onClose={toggleModal} largeImageUrl={largeImageUrl} alt={alt} />
+      )}
+      <Searchbar onSubmit={handleSubmit} />
+
+      <ImageGallery images={items} onClick={changeLargeImage} />
+      {isLoader && <Loader />}
+      {items.length !== totalImages && items.length !== 0 && (
+        <Button onClick={loadMore} />
+      )}
+    </Box>
+  );
+};

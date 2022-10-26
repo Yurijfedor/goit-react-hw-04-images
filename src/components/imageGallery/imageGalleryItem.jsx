@@ -10,7 +10,7 @@ export const ImageGalleryItem = ({
       <GalleryImage
         src={webformatURL}
         alt={tags}
-        onClick={() => onClick(largeImageURL)}
+        onClick={() => onClick(largeImageURL, tags)}
       />
     </GalleryItem>
   );
