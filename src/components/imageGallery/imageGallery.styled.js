@@ -85,7 +85,7 @@ export const Input = styled.input`
 export const GalleryList = styled.ul`
   display: grid;
   max-width: calc(100vw - 48px);
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(450px, 1fr));
   grid-gap: ${p => p.theme.space[6]}px;
   margin-top: 0;
   margin-bottom: 0;
